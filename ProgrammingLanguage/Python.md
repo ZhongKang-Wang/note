@@ -467,7 +467,7 @@ class  VillageDog(Dog): # 创建子类时，父类必须包含在当前文件中
 
 ```python
 from dog import Dog, Village_dog # 从文件中导入多个类
-类似地，还可以导入整个模块
+# 类似地，还可以导入整个模块
 ```
 
 
@@ -679,10 +679,10 @@ unittest.main() # 让python运行这个文件中的测试
 
 # 20250701
 
-`使用模块pyplot中的plot绘制折线图`
+`使用模块pyplot中的plot函数绘制折线图`
 
 ```python
-import matplotlib.pyplot as plt # 模块pyplot包含很多用于生成图表的函数
+import matplotlib.pyplot as plt # 模块matplotlib包含很多用于生成图表的函数
 input_values = [1, 2, 3, 4, 5]
 squares = [1, 4, 9, 16, 25]
 plt.plot(input_values, squares, linewidth=5)
@@ -698,4 +698,138 @@ plt.show() # 打开matplotlib查看器
 ```
 
 `散点图`
+
+```python
+import matplotlib.pyplot as plt # 模块pyplot包含很多用于生成图表的函数
+# pyplot应该是一个类
+x_values = list(range(1, 1001))
+y_values = [x**2 for x in x_values]
+# 自定义颜色c=(0, 0, 0.8)，分别表示红绿蓝三种分量，0-1，越接近0，颜色越深
+plt.scatter(x_values, y_values, c=(0, 0, 0.8), edgecolor='none', s=40)
+# matplotlib绘制散点图时默认蓝色点+黑色轮廓，edgecolor='none'意思是删除黑色轮廓
+
+# 设置图表标题，并给坐标轴加上标签
+plt.title("Square Numbers", fontsize=24)
+plt.xlabel("Value", fontsize=24)
+plt.ylabel("Square of Value", fontsize=14)
+
+# 设置刻度标记大小
+plt.tick_params(axis='both', which='major', labelsize=14) 
+# major表示只影响主要刻度
+
+# 设置每个坐标轴的取值范围
+plt.axis([0, 1100, 0, 1100000])
+
+plt.savefig('squares_plot.png', bbox_inches='tight') # 自动保存图表
+# 第二个实参将图表多余的空白区域裁减掉
+
+plt.show() # 打开matplotlib查看器，关闭图形窗口后，matplotlib会把图形状态清空。
+```
+
+
+
+可视化包`Pygal`可以生成可放缩的矢量图形文件。
+
+```python
+import pygal
+
+frequencies = [155, 167, 170, 159, 181]
+
+# 对结果进行可视化
+hist = pygal.Bar() # 直方图
+
+hist.title = "Results of rolling one D6 1000 times."
+hist.x_labels = ['1', '2', '3', '4', '5']
+hist.x_title = 'Result'
+hist.y_title = 'Frequency of Result'
+
+hist.add('D6', frequencies) # 第一个参数表示标签，第二个参数表示y值
+hist.render_to_file('dir_visual.svg') # .svg可以在浏览器中查看
+```
+
+
+
+# 20250702
+
+我们学习python的目的是能够学会爬虫，追自己想看的电视剧，获取别人不知道的信息。
+
+这样听上去很有用，也足够有吸引力。
+
+虽然不知道这个暑假里我能学到多少，但是你只管做，不要想别的。
+
+
+
+
+
+# 20250703
+
+访问并可视化两种常见格式存储的数据：`CSV`和`JSON`
+
+
+
+`CSV`
+
+example
+
+```python
+import csv # 导入CSV模块
+from matplotlib import pyplot as plt
+from datetime import datetime
+filename = "death_valley_2014.csv"
+with open(filename) as f:
+    reader = csv.reader(f) # 创建一个与该文件相关联的阅读器对象-单向迭代器
+    header_row = next(reader) # 返回当前行，迭代器移到下一行，在这里header_row接受到的是第一行
+    # print(header_row) # 调用next后文件指针指向第二行开头
+    # 每一行都是一个列表，靠英文逗号分割
+
+    # 从文件中获取最高气温
+    date, highs, lows = [], [], []
+    for row in reader: # 阅读器对象从其停留的地方继续往下读取
+        try:
+            current_date = datetime.strptime(row[0], '%Y-%m-%d')
+            high = int(row[1])
+            low = int(row[3])
+            
+        except ValueError:
+            print(current_date, "missing data")
+        else:
+            date.append(current_date)
+            highs.append(high)
+            lows.append(low)
+
+# 可视化
+fig = plt.figure(dpi=128, figsize=(10, 6)) # fig是图形对象
+plt.plot(date, highs, c="red", label="highest_temperature")
+plt.plot(date, lows, c="blue", label="low_temperature")
+plt.fill_between(date, highs, lows, facecolor="blue", alpha=0.1)
+# alpha表示透明度，0表示完全透明
+
+# 设置图形格式
+plt.title("Daily high temperatures, 2014", fontsize=24)
+plt.xlabel('', fontsize=16)
+fig.autofmt_xdate() # 自动调整x轴标签
+plt.ylabel("Temperature(F)", fontsize=16)
+plt.tick_params(axis='both', which='major', labelsize=16)
+plt.xlim(min(date), max(date))
+
+plt.show()
+```
+
+
+
+`JSON`
+
+从网上下载数据
+
+```python
+# 从网上下载数据
+import requests
+
+json_url = "https://raw.githubusercontent.com/muxuezi/btc/master/btc_close_2017.json"
+req = requests.get(json_url) # 通过get方法向github发出请求，返回结果存储在req中
+# 将数据写入文件
+with open("btc_close_2017_request.json", "w") as f:
+    f.write(req.text) # req.text读取数据并返回字符串
+file_requests = req.json() # 将json文件中的数据转换成列表
+```
 

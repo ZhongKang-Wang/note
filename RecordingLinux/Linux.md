@@ -1,13 +1,3 @@
-# 20240225
-
-
-
-VMware Workstation 虚拟机软件
-
-主要功能：方便在桌面上同时运行不同的虚拟机系统
-
-
-
 # 20240226
 
 
@@ -610,7 +600,7 @@ useradd [-g -d] 用户名 //创建用户
 
 # 20250615
 
-Linux是一个内核。
+Linux是一个操作系统的内核。
 
 shell 壳
 
@@ -729,9 +719,20 @@ int open(const char* pathname, int flags, mode_t mode);
 int creat(const char* pathname, mode_t mode);
 ```
 
-- pathname可以是绝对路径或者相对路径
-- flags表示打开方式 O_RDONLY/O_WRONLY/O_RDWR/... 可用|连接
+- pathname 可以是绝对路径或者相对路径
+- flags
+  - O_CREAT 如果文件不存在，就创建
+  - O_TRUNC 如果文件存在，就截断
+  - O_APPEND
+  - O_RDONLY
+  - O_WRONLY
+  - O_RDWR
+  - 可用`|`运算
 - mode只有在创建文件时才使用，用于指定文件的访问权限（使用权限宏需要包含sys/stat.h头文件）
+
+
+
+我理解了，只有明确声明`O_CREAT`时，open才会在文件不存在时创建文件，此时第三个参数用于指明这个文件的权限。
 
 
 
@@ -776,7 +777,7 @@ SFTP（Secure File Transfer Protocol）是一种安全的文件传输协议。�
 
 # 20250627
 
-## 锁
+## 文件锁定
 
 当多个用户同时操作文件时，需要给文件上锁。
 
@@ -784,3 +785,246 @@ SFTP（Secure File Transfer Protocol）是一种安全的文件传输协议。�
 
 - 建议性锁：只在文件上设置一个锁的标识，可以让其他进程检测到
 - 强制性锁：
+- 对文件上锁是原子性的
+
+```c++
+#include <unistd.h>
+#include <fcntl.h> //file control
+int fcntl(int fd, int cmd, struct flock* lock); 
+```
+
+- fd：文件描述符
+
+- cmd：操作命令
+
+  
+
+# 20250702
+
+## 多进程编程
+
+进程标识符`PID`
+
+每个进程都有一个唯一的进程标识符，在程序中类型为`pid_t`，被定义在`sys/type.h`头文件中，虽然底层是`int`。
+
+```c++
+#include <unistd.h>
+pid_t getpid(void) // 获取当前进程的pid
+```
+
+### 创建进程
+
+#### `fork()`
+
+```c++
+#include <unistd.h>
+pid_t fork();
+```
+
+- 初始状态：父子共享同一片物理地址，父子权限都对这片物理地址都是只读状态
+- 写入时：任何一方写入时触发内存复制，复制后各自拥有独立副本（==写时复制==）
+
+example
+
+```c++
+#include <iostream>
+using namespace std;
+
+#include <unistd.h>
+#include <stdio.h>
+int main() {
+    pid_t fpid;
+    int count = 0;
+    fpid = fork(); // 向子进程返回0， 向父进程返回子进程的PID，否则向父进程返回-1表示子进程创建失败
+    if (fpid < 0) // 创建失败
+        cout << "failed to fork." << endl;
+    else if (fpid == 0) { // 子进程
+        cout << "I'm the child process." << endl;
+        cout << "my pid is " << getpid() << endl;
+        ++count;
+    }
+    else { // 父进程
+        cout << "I'm the parent process." << endl;
+        cout << "my pid is " << getpid() << endl;
+        cout << "fpid =" << fpid << endl;
+        ++count;
+    }
+    printf("result: %d\n", count);
+    return 0;
+}
+```
+
+下面是我在linux上的输出
+
+```c++
+I'm the parent process. // 父进程先执行
+I'm the child process. // 子进程被调度执行（并发性）
+my pid is 3110 // 父进程继续执行，这是父进程自己的PID
+fpid = 3111 // 这是父进程输出的 子进程的PID
+result: 1  // 这是父进程中的count，这个时候应该已经触发了写时复制，
+my pid is 3111 // 子进程的PID
+result: 1 // 子进程结束
+```
+
+#### `exec()`
+
+```c++
+#include <unistd.h>
+int execl(const char* path, coonst char* arg, ...);
+int execlp(const char *file, const char *arg0, ...); 
+// execlp不需要写出完整路径，它回到环境变量PATH的路径中去找
+```
+
+Q：同样是创建进程，`fork()`和`exec()`区别在哪里?
+
+- fork()创建新的进程，会产生一个新的PID
+- 而exec()创建的进程会占据原来的进程，PID不变
+
+
+
+example
+
+```c++
+#include <unistd.h>
+int main() {
+    // 第二个参数随便编的，因为执行pwd命令后面啥也不跟
+    execl("/bin/pwd", "asdfaf", NULL); // 但是最后一个参数必须用NULL表示参数列表结束
+    return 0;
+}
+```
+
+
+
+```c++
+execl("/bin/ls", "abds", "-al", "./test", NULL); //还可以这样，将当前进程替换掉
+//执行命令ls -al ./test
+```
+
+
+
+这里写一下我对main中指针的理解。
+
+在main函数中，有这样两种写法。
+
+```c++
+int main(int argc, char* argv[])
+```
+
+- argc表示参数的数目
+- argv则是一个char*数组，数组中存放的都是指向char型的指针。
+
+另一种写法和上述写法等价。
+
+```c++
+int main(int argc, char** argv)
+```
+
+- argv是一个指向char*的指针
+
+```plaintext
+argv (char**) ────┐
+                  │
+                  ▼
++───────────────────────────+
+│ 内存区域（char* 数组）    │
+├───────────────────────────┤
+│ [0]: 指向 "./a.out" 的指针 │
+│ [1]: 指向 "hello" 的指针   │
+│ [2]: NULL                 │
++───────────────────────────+
+```
+
+#### `system()`
+
+```c++
+#include <stdlib.h>
+int system(const char* command);
+```
+
+通过调用Shell程序来执行传入的命令
+
+特点：
+
+- 源进程和子进程各自进行
+- 源进程需要等子进程运行完后再运行
+
+
+
+Linux采用的是`基于优先级可抢占式的调度系统`
+
+这个抢占仅限于运行在用户态下的进程。
+
+
+
+Linux调度程序采用两种优先级
+
+- 静态优先级：只针对实时进程，范围1-99
+  - 针对实时进程，有两种调度策略
+    - 先入先出
+    - 时间片轮转
+- 动态~：应用于普通进程
+
+
+
+## 进程的分类
+
+- 前台进程/普通进程：需要和用户交互的进程
+
+- 后台进程
+
+  对于不需要交互的进程，我们希望它在后台默默启动，可以这样做。
+
+  `./test &`
+
+  我们把切换到后台运行的进程称为`job`
+
+
+
+- 守护进程：运行在后台的一种特殊进程。它==独立于控制终端==且周期性地执行某种任务或等待处理某些发生的事件。
+
+  - 特点
+
+    - 具有超级用户的权限
+
+    - 父进程是`init`进程
+
+      
+
+
+
+# 20250704 
+
+## Linux进程间的通信
+
+### 信号
+
+在软件层次上可以理解为中断。
+
+Linux使用信号的目的：
+
+- 让进程意识到发生了一个特定的事件
+- 迫使进程执行信号处理程序
+
+
+
+针对信号，进程可以采取如下手段：
+
+- 忽略信号：有两个信号不能被忽略，他们分别是`SIGKILL`和`SIGSTOP`
+- 执行相应的处理程序
+
+
+
+#### 信号的分类
+
+- 实时/可靠信号
+
+- 非实时/不可靠信号
+
+区别在于：实时信号不支持排队，否则信号可能丢失
+
+
+
+```c++
+kill [参数] [进程号]
+```
+

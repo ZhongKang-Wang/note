@@ -8288,19 +8288,3 @@ Q：在C++的vector容器中，emplace_back()和push_back()都是插入元素，
 
 
 
-# 20250701
-
-老是记不住C++`优先队列`
-
-它是一个基于vector的容器适配器，默认是less，大顶堆。如果我们要定义一个小顶堆，example
-
-```c++
-priority<int, vector<int>, myCompare> pq;
-class myCompare {
-    public:
-    	bool operator()(int v1, int v2) {
-            return v1 > v2;
-        }
-}
-```
-
