@@ -830,6 +830,152 @@ req = requests.get(json_url) # 通过get方法向github发出请求，返回结�
 # 将数据写入文件
 with open("btc_close_2017_request.json", "w") as f:
     f.write(req.text) # req.text读取数据并返回字符串
-file_requests = req.json() # 将json文件中的数据转换成列表
+file_requests = req.json() # 将数据自动解析为Python的数据结构
 ```
 
+:sob:
+
+
+
+终于把可视化这一章看完了，写了很多注释，也可能不会在看，或者说没什么用，但是当前看完一遍之后感觉收获还是有的，迷惑自己：这就是进步。
+
+继续加油吧。
+
+```python
+import json
+import pygal
+import math
+from itertools import groupby # 导入函数groupby
+from datetime import datetime # datetime是一个类
+
+# 将数据加载到一个列表中
+filename = "btc_close_2017_request.json"
+with open(filename, "r") as f:
+    btc_data = json.load(f) # 装载
+
+# 创建5个列表，分别存储日期和收盘价
+dates, months, weeks, weekdays, close = [], [], [], [], []
+
+# 每一天的信息
+for btc_dict in btc_data:
+    dates.append(btc_dict["date"])
+    months.append(int(btc_dict["month"]))
+    weeks.append(int(btc_dict["week"]))
+    weekdays.append(btc_dict["weekday"])
+    close.append(int(float(btc_dict["close"]))) # python不能将带有小数点的字符串转换为整数
+
+def draw_line(x_data, y_data, title, y_legend):
+    xy_map = []
+    for x, y in groupby(sorted(zip(x_data, y_data)), key=lambda _: _[0]):
+        # 对于不了解的函数，要去查询手册
+        """
+        zip()将x_data, y_data（可迭代对象中的元素）一一映射成一个个元组，返回对象是一个可迭代的迭代器。
+        sorted依照元组的第一个元素，从小到大进行排序， 返回一个列表。
+        在这个列表中，都是元组。
+
+        lambda 表达式的语法
+        lambda arguments: expression
+        arguments 是一个或多个参数，用逗号分隔。
+        expression 是一个表达式，lambda 表达式会返回这个表达式的值。
+
+        排序好之后，groupby将连续相同键值的元素分组到一起
+        x 是键值， y是一个元组迭代器
+        """
+        y_list = [v for _, v in y]
+        xy_map.append([x, sum(y_list) / len(y_list)]) # 均值
+    x_unique, y_mean = [*zip(*xy_map)] 
+    """
+    *用于将xy_map解包，即去掉最外层的[] [1, 2], [1, 3]
+    zip (1, 1), (2, 3) 返回一个元组迭代器
+    """
+    line_chart = pygal.Line() # 绘制折线图
+    line_chart.title = title
+    line_chart.x_labels = x_unique
+    line_chart.add(y_legend, y_mean) # 第2个参数是y值列表
+    line_chart.render_to_file(title+'.svg')
+    return line_chart
+
+idx_month = dates.index('2017-12-01')
+line_chart_month = draw_line(months[: idx_month], close[: idx_month], '收盘价月日均值(￥)', '月日均值')
+line_chart_month
+
+idx_week = dates.index('2017-12-11')
+line_chart_week = draw_line(weeks[1: idx_week], close[1: idx_week], '收盘价周日均值(￥)', '周日均值')
+line_chart_week 
+
+wd = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+weekdays_int = [wd.index(w) + 1 for w in weekdays[1: idx_week]]
+line_chart_weekday = draw_line(weekdays_int, close[1: idx_week], '收盘价星期均值(￥)', '星期均值')
+line_chart_weekday.x_labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+line_chart_weekday.render_to_file('收盘价星期均值(￥).svg')
+```
+
+
+
+# 20250708
+
+![image-20250708091928380](Python.assets/image-20250708091928380.png)
+
+
+
+
+
+```python
+import requests
+import pygal
+from pygal.style import LightColorizedStyle as LCS, LightenStyle as LS
+
+# 执行AP调用并存储响应 Web Application Programming Interface，即网络应用程序编程接口
+url = "https://api.github.com/search/repositories?q=language:python&sort=stars"
+r = requests.get(url)
+print("Status code: ", r.status_code) # 状态码200表示请求成功
+
+response_dict = r.json() # API将返回JSON格式的信息
+# 方法json()将这些信息转换为一个字典
+
+print("Total repositories: ", response_dict['total_count'])
+
+repo_dicts = response_dict['items'] # 字典列表
+
+example = repo_dicts[0]
+# for key in sorted(example.keys()):
+#   print(key)
+print("Repositories returned: ", len(repo_dicts))
+
+names, plot_dicts = [], []
+for repo_dict in repo_dicts:
+   names.append(repo_dict['name'])
+   plot_dict = {
+      'value': repo_dict['stargazers_count'],
+      'label': repo_dict['description'],
+      'xlink': repo_dict['html_url'],
+   }
+   plot_dicts.append(plot_dict)
+
+# 可视化
+my_style = LS('#333366', base_style=LCS)
+
+my_config = pygal.Config()
+my_config.x_label_rotation = 45
+my_config.show_legend = False
+my_config.title_font_size = 24
+my_config.label_font_size = 14
+my_config.truncate_label = 15
+my_config.show_y_guides = False
+my_config.width = 1000
+
+chart = pygal.Bar(my_config, style=my_style)
+chart.title = 'Most-Starred Python Projects on GitHub'
+chart.x_labels = names
+chart.add('stars', plot_dicts)
+chart.render_to_file('python_repos.svg')
+```
+
+
+
+Pygal 和 Matplotlib 都是 Python 的数据可视化工具，但它们的设计目标、使用场景和实现方式有很大不同。
+
+- **Matplotlib**：
+  生成静态图像（如 PNG、SVG、PDF）或交互式图表（通过 Jupyter Notebook 或 GUI 后端）。主要用于本地数据探索和学术 publication。
+- **Pygal**：
+  生成**交互式 SVG 图表**，直接嵌入 HTML 页面或网页应用中。适合 Web 环境下的动态数据展示。

@@ -1745,30 +1745,47 @@ using 编译指令。
 
 头文件 `climits` 包含了许多 变量限制的信息，如INT_MAX
 
-
-
-### C++11初始化方式
-
-
-
-```C++
-int psychics{}; //int psychics = 0
-int rocs = {}; //int rocs = 0
-```
-
-
-
 浮点常量默认数据类型是double
 
 
 
 ## 强制类型转换
 
+### static_cast
 
+语法`static_cast<type>(value)`
+
+example
 
 ```c++
-static_cast<long> (thorn) // returns a type long conversion of thorn
+cout << static_cast<int>(1.7); 
+double d = 4.5;
+int i = static_cast<int>(d); //强制转换不会更改正在转换的变量，i becomes 4，but d is unchanged
 ```
+
+- 用于进行比较“自然”和低风险的转换，如整型和浮点型、字符型之间的互相转换。
+
+
+
+### reinterpret_cast
+
+- reinterpret_cast 用于进行各种不同类型的指针之间、不同类型的引用之间以及指针和能容纳指针的整数类型之间的转换。转换时，执行的是逐个比特复制的操作。
+
+- 这种转换提供了很强的灵活性，但转换的安全性只能由程序员的细心来保证。
+- reinterpret_cast体现了 C++ 语言的设计思想：用户可以做任何操作，但要为自己的行为负责。
+
+### const_cast
+
+- const_cast 运算符仅用于进行去除 const 属性的转换，它也是四个强制类型转换运算符中唯一能够去除 const 属性的运算符。
+
+### dynamic_cast
+
+- dynamic_cast专门用于将多态基类的指针或引用强制转换为派生类的指针或引用，而且能够检查转换的安全性。对于不安全的指针转换，转换结果返回 NULL 指针。
+- 运行时检查安全性
+
+[C++强制类型转换运算符（static_cast、reinterpret_cast、const_cast和dynamic_cast） - C语言中文网](https://c.biancheng.net/view/410.html)
+
+
 
 
 
@@ -1790,7 +1807,7 @@ sizeof 用于数组名，得到的是整个数组所占的字节数
 
 标准头文件<cstring>提供了许多处理字符串的函数
 
-strlen()只计算看得见的字符，不包括\0
+`strlen()`只计算看得见的字符，不包括\0
 
 
 
@@ -1826,9 +1843,9 @@ cin.getline(name, 20); //最多读取19个字符到Name数组
 
 - 空行和其它问题
 
-​	当get()读取空行后将设置失效位(failbit)，输入会被阻断，恢复命令cin.clear()
+​	当get()读取空行后将设置失效位(failbit)，输入会被阻断，恢复命令`cin.clear()`
 
-​	另，输入字符串比指定的长度还要多，getline()和get()将多余的留在输入队列，getline()还会设置失效位关闭后续输入
+​	另，输入字符串比指定的长度还要多，`getline()`和`get()`将多余的留在输入队列，`getline()`还会设置失效位关闭后续输入
 
 
 
@@ -1852,13 +1869,9 @@ string 和 char***区别**：
 
 
 
-| string 常见操作 | 解释                                   |
-| --------------- | -------------------------------------- |
-| length()        |                                        |
-| size()          | 和length()一样都是返回字符串中的字符数 |
-|                 |                                        |
-|                 |                                        |
-|                 |                                        |
+| string 常见操作 | 解释 |
+| --------------- | ---- |
+| length()        |      |
 
 
 
@@ -1885,12 +1898,6 @@ void test01()
 	cout << "s3 = " << s3 << endl;
 	string s4(10, 'a');
 	cout << "s4 = " << s4 << endl;
-}
-int main()
-{
-	test01();
-	system("pause");
-	return 0;
 }
 ```
 
@@ -2163,8 +2170,6 @@ int main()
 
 
 ## 结构体
-
-
 
 
 
@@ -3900,21 +3905,34 @@ A：右值引用是为了实现移动语义。
 
 
 
-Lambda函数
+`Lambda`函数
 
 这项功能可以让我们直接使用匿名函数，而无需给函数命名。
 
 仅当lambda表达式完全由一条返回语句组成时，自动类型推断才管用；否则，需要使用返回后置语法。
 
 ```cpp
-[capture list] (parameter list) -> decltype(T) { function body }; //带括号的左值才能推导出引用
+[capture list] (parameters) -> decltype(T) { function body }; //带括号的左值才能推导出引用
 ```
 
 - **`[capture list]`**：捕获外部变量的方式（值捕获、引用捕获等）
 
 - **`(parameter list)`**：函数参数列表，与普通函数参数类似
-- **`-> return type`**：返回类型（可省略，编译器自动推导）
+- **`-> return type`**：返回类型（可省略，因为编译器会自动推导）
 - **`{ function body }`**：函数体
+
+
+
+E：
+
+```c++
+auto add = [](int a, int b) {
+    return a + b;
+};
+int result = add(3, 4); // result = 7
+```
+
+
 
 
 
@@ -5526,7 +5544,7 @@ int main()
 
 
 
-### ex_1 构造函数 和析构函数
+### ex_1 构造函数 和 析构函数
 
 
 
@@ -6118,13 +6136,19 @@ int main()
 
 
 
-## 对象模型 和 this 指针
+## 对象模型 和 this 指针(待整理)
 
 C++对象模型 和 this 指针
 
-成员变量 和 成员函数 分开存储
 
-只有 **非静态成员** 才属于 类的对象上
+
+`静态成员变量`和`静态成员函数`属于类
+
+`非静态成员函数`也属于类
+
+所有对象共享同一份代码段，区别在于：非静态成员函数有一个隐含的 `this` 指针，调用时会自动绑定到当前对象，从而访问该对象的成员变量。
+
+每个对象单独存储`非静态成员变量`
 
 
 
@@ -6177,7 +6201,7 @@ int main()
 
 ### ex_2 this指针
 
- C++中的 成员变量和 成员函数 是==分开存储==的
+ C++中的 成员变量 和 成员函数 是==分开存储==的
 
 每一份非静态成员函数只会诞生一份实例对象，也就是说多个同类型的对象会共用同一块代码。
 
@@ -6299,7 +6323,7 @@ const修饰成员函数
 
 常对象
 
-- 声明对象前加const称该对象为常对象
+- 声明对象前加`const`称该对象为常对象
 - ==常对象只能调用常函数==
 
 
@@ -6412,7 +6436,7 @@ void test01()
 	Person p2;
 	p2.m_A = 10;
 	p2.m_B = 10;
-	//Person p3 = p1 + p2; 
+	//Person p3 = p1 + p2; // 优先调用成员函数重载运算符
 	//Person p3 = p1.operator+(p2); //成员函数重载本质调用
 	//Person p3 = operator+(p1, p2); //全局函数重载本质调用
 	//运算符重载也可以发生函数重载
@@ -6478,7 +6502,7 @@ int main()
 
 - =：赋值运算符
 - ()：函数调用运算符
-- []：下表运算符
+- []：下标运算符
 - ->：通过指针访问类成员的运算符
 
 这些运算符只能通过成员函数进行重载
@@ -7517,9 +7541,12 @@ int main()
 
 多态分为两类
 
-- 静态多态： 函数重载 和 运算符重载 属于静态多态
+- 静态多态： `函数重载` 和 `运算符重载` `模版`[^1]属于静态多态
 
-- 动态多态：派生类 和虚函数 实现运行时多态
+- 动态多态：`派生类` 和 `虚函数` 实现运行时多态
+
+
+[^1]:模板同样是在编译阶段进行决策。当使用模板函数或模板类时，编译器会根据实际传入的类型参数，在编译期生成针对该类型的具体代码。
 
  
 
@@ -8030,41 +8057,7 @@ exception头文件内定义了exception类，C++可以把它作为其他异常�
 
 # 20250613
 
-## C++强制转换运算符
 
-### static_cast
-
-语法`static_cast<type>(value)`
-
-example
-
-```c++
-cout << static_cast<int>(1.7); 
-double d = 4.5;
-int i = static_cast<int>(d); //强制转换不会更改正在转换的变量，i becomes 4，but d is unchanged
-```
-
-- 用于进行比较“自然”和低风险的转换，如整型和浮点型、字符型之间的互相转换。
-
-
-
-## reinterpret_cast
-
-- reinterpret_cast 用于进行各种不同类型的指针之间、不同类型的引用之间以及指针和能容纳指针的整数类型之间的转换。转换时，执行的是逐个比特复制的操作。
-
-- 这种转换提供了很强的灵活性，但转换的安全性只能由程序员的细心来保证。
-- reinterpret_cast体现了 C++ 语言的设计思想：用户可以做任何操作，但要为自己的行为负责。
-
-## const_cast
-
-- const_cast 运算符仅用于进行去除 const 属性的转换，它也是四个强制类型转换运算符中唯一能够去除 const 属性的运算符。
-
-## dynamic_cast
-
-- dynamic_cast专门用于将多态基类的指针或引用强制转换为派生类的指针或引用，而且能够检查转换的安全性。对于不安全的指针转换，转换结果返回 NULL 指针。
-- 运行时检查安全性
-
-[C++强制类型转换运算符（static_cast、reinterpret_cast、const_cast和dynamic_cast） - C语言中文网](https://c.biancheng.net/view/410.html)
 
 
 
@@ -8286,5 +8279,7 @@ Q：在C++的vector容器中，emplace_back()和push_back()都是插入元素，
 
 
 
+# 20250709
 
+RTTI Runtime Type Identification
 
