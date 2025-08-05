@@ -7986,6 +7986,12 @@ int main()
 
 
 
+关于 （普通）纯虚函数 和 纯虚析构函数的区别。
+
+对于纯虚函数，基类不实现，但子类必须重写；
+
+对于纯虚析构函数，基类必须在类外实现，子类不需要重写
+
 # 异常和其他 15
 
 
@@ -8244,3 +8250,148 @@ Q：在C++的vector容器中，emplace_back()和push_back()都是插入元素，
 
 RTTI Runtime Type Identification
 
+
+
+# 20250805
+
+## 投影函数（待整理）
+
+在 C++20 的 Ranges 库中，**投影函数（Projection Function）** 是一个非常实用的特性，它允许你在进行范围操作（如排序、查找最大值、过滤等）时，对元素进行转换或提取特定属性，而无需修改原始数据。
+
+------
+
+### 什么是投影函数？
+
+投影函数是一个函数对象，它接受一个元素作为输入，并返回该元素的一个属性或转换后的值。例如：
+
+- 对于字符串，投影函数可以是 `&std::string::length`，用于提取字符串的长度。
+- 对于自定义类型，投影函数可以是一个 lambda 表达式，用于提取或转换属性。
+
+投影函数的作用是将范围中的每个元素转换为一个新的值，然后基于这个新值进行操作（如比较、排序等）。
+
+------
+
+### 投影函数的用途
+
+1. **提取属性**：
+   - 例如，提取字符串的长度、提取结构体的某个字段等。
+2. **转换值**：
+   - 例如，将字符串转换为大写、将数字平方等。
+3. **简化代码**：
+   - 避免手动编写循环来转换或提取属性，使代码更简洁、更易读。
+
+------
+
+### 投影函数的使用示例
+
+#### 示例 1：提取字符串长度
+
+假设你有一个字符串列表，想要找到最长的字符串。可以使用投影函数 `&std::string::length` 来提取每个字符串的长度，然后比较这些长度。
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ranges>
+
+int main() {
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date"};
+
+    // 使用投影函数 &std::string::length 提取字符串长度
+    auto longest_word = std::ranges::max(words, {}, &std::string::length);
+
+    std::cout << "Longest word: " << longest_word << std::endl;
+    std::cout << "Length: " << longest_word.length() << std::endl;
+
+    return 0;
+}
+```
+
+
+
+------
+
+#### 示例 2：提取结构体字段
+
+假设你有一个结构体 `Person`，包含 `name` 和 `age` 字段。你可以使用投影函数提取 `age` 字段，然后找到年龄最大的人。
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ranges>
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+int main() {
+    std::vector<Person> people = {
+        {"Alice", 25},
+        {"Bob", 30},
+        {"Charlie", 22},
+        {"David", 35}
+    };
+
+    // 使用投影函数提取 age 字段
+    auto oldest_person = std::ranges::max(people, {}, &Person::age);
+
+    std::cout << "Oldest person: " << oldest_person.name << std::endl;
+    std::cout << "Age: " << oldest_person.age << std::endl;
+
+    return 0;
+}
+```
+
+
+
+
+
+------
+
+#### 示例 3：使用 Lambda 作为投影函数
+
+你也可以使用 Lambda 表达式作为投影函数，进行更灵活的转换。例如，将字符串转换为大写，然后找到字典序最大的字符串。
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ranges>
+#include <algorithm>
+
+int main() {
+    std::vector<std::string> words = {"apple", "banana", "cherry", "date"};
+
+    // 使用 Lambda 作为投影函数，将字符串转换为大写
+    auto max_word = std::ranges::max(
+        words,
+        {},
+        [](const std::string& s) {
+            std::string upper = s;
+            std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+            return upper;
+        }
+    );
+
+    std::cout << "Max word (case-insensitive): " << max_word << std::endl;
+
+    return 0;
+}
+```
+
+
+
+------
+
+### 投影函数的优势
+
+1. **代码简洁**：
+   - 无需手动编写循环来转换或提取属性。
+2. **可读性强**：
+   - 投影函数明确表达了操作的意图，使代码更易读。
+3. **灵活性高**：
+   - 可以使用成员函数指针、Lambda 表达式或函数对象作为投影函数。
+4. **兼容性好**：
+   - 投影函数可以与 Ranges 库中的其他算法（如 `std::ranges::sort`、`std::ranges::find` 等）配合使用。

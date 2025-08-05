@@ -112,6 +112,14 @@ malloc()是有开销的，它的内存中开辟的内存维护的值包含内存
 
 
 
+
+
+
+
+
+
+
+
 # List 容器
 
 
@@ -124,5 +132,9 @@ malloc()是有开销的，它的内存中开辟的内存维护的值包含内存
 
 
 
+# 20250731
 
+OOP(`Object-Oriented programming`)企图将datas和methods放在一起
+
+GP(`Genetic Programming`)却是将datas和methods分开来
 

@@ -29,7 +29,7 @@ class object只存储nonstatic data members
 class object
 -----------
 nonstatic data members
-virtual pointer ->指向相关类的virtual table
+virtual pointer ->指向相关的virtual table
 
 virtual table 存放的都是virtual functions 的指针
 ```

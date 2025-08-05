@@ -47,7 +47,7 @@ python将带小数点的数字都称为浮点数
 python用#表示注释。
 
 ```python
-# 王楚
+# 这是一行注释
 # 2025.06.24
 import this
 
