@@ -99,16 +99,16 @@ struct less {
 
 malloc()是有开销的，它的内存中开辟的内存维护的值包含内存的大小，所以free()不需要知道开辟内存到底有多大。
 
-|           序列式容器           |            关联式容器             |
-| :----------------------------: | :-------------------------------: |
-|     array/vector(连续空间)     |      rb_tree(红黑树)(非公开)      |
-|              heap              |                set                |
-|         priority_queue         |                map                |
-|              list              |             hashtable             |
-|   slist(forward_list)，单向    |      hash_set(unordered_set)      |
-|       deque 分段连续空间       |      hash_map(unordered_map)      |
-| stack/queue(Container Adapter) | hash_multiset(unordered_multiset) |
-|                                | hash_multimap(unordered_multimap) |
+|                 序列式容器                 |            关联式容器             |
+| :----------------------------------------: | :-------------------------------: |
+|           array/vector(连续空间)           |      rb_tree(红黑树)(非公开)      |
+|                    heap                    |         set 有一个rb_tree         |
+|  priority_queue 有一个heap帮助它管理数据   |         map 有一个rb_tree         |
+|                 list 双向                  |             hashtable             |
+|         slist(forward_list)，单向          |      hash_set(unordered_set)      |
+|             deque 分段连续空间             |      hash_map(unordered_map)      |
+| stack/queue(Container Adapter) 有一个deque | hash_multiset(unordered_multiset) |
+|                                            | hash_multimap(unordered_multimap) |
 
 
 

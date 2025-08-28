@@ -8142,7 +8142,7 @@ for (double e: myList) {
 
 # 20250621
 
-智能指针
+## 智能指针
 
 example
 
@@ -8160,11 +8160,11 @@ void remodel(std::string& str) {
 
 Q：ps在从栈内存中删除时，不能释放它指向的堆区内存。
 
-A：那如果它是有着析构函数的类对象，在对象过期时，就可以让它的析构函数删除指向的内存。
+A：如果它是有着析构函数的类对象，在对象过期时，就可以让它的析构函数删除指向的内存。
 
 `auto_ptr`(C++98)
 
-要创建智能指针对象，必须包含头文件memory
+要创建智能指针对象，必须包含头文件\<memory\>
 
 example 模版auto_ptr的构造函数
 
@@ -8172,7 +8172,7 @@ example 模版auto_ptr的构造函数
 template<class X>
 class auto_ptr {
 public:
-    explicit auto_ptr(X* p) thorw(); //throw()表示异常规范
+    explicit auto_ptr(X* p) noexcept; // 表示该函数不抛出异常
 }；
 ```
 
