@@ -262,7 +262,7 @@ CDRC：composite disturbance rejection control
 
 
 
-因为控制输入涉及利普希茨非线性函数，所以感觉参考意义不是很大。
+没太看懂控制策略是怎么设计的。
 
 
 
@@ -278,7 +278,7 @@ CDRC：composite disturbance rejection control
 
 这篇论文主要讲的是在领航车失联的情况下切换控制协议。
 
-当能正常接收领航车和邻居车信息时，就根据领航车和邻居车的信息生成控制输入；否则在领航车失联的情况下，控制协议只使用邻居车的信息。
+当能正常接收领航车和邻居车信息时，就根据领航车和前车的信息生成控制输入；否则在领航车失联的情况下，控制协议只使用前车的信息。
 
 
 
@@ -301,7 +301,15 @@ CDRC：composite disturbance rejection control
 
 
 
-感觉这个证明李雅普诺夫函数指数稳定还是需要一点技巧的，标个点。
+MDADT要为每个子系统单独设定平均驻留时间$\tau_a$，衰减系数$v_v$和跳变系数$\rho_v$
+
+如果对于每个子系统，上述参数都设置成相同的量，那就是普通的ADT
+
+这种依赖于模态的平均驻留时间切换允许的驻留时间小于ADT的，因此切换更加灵活。
+
+
+
+要求车辆队列系统满足指数$L_2$性能指标，兼顾扰动抑制和误差指数衰减特性。
 
 
 
@@ -315,4 +323,69 @@ CDRC：composite disturbance rejection control
 
 提到基于驻留时间的切换不符合工程实践，因为驻留时间存在下限，而紧急事故总是突然发生的。
 
+
+
 这篇论文感觉就是普通的马尔可夫切换，目前没感觉到有什么特别的。它的控制输入只需要邻居车辆的信息，拓扑在`pf`,`tpf`,`lpf`之间随机切换。因为是自适应控制，所以在控制协议中加了好几个参数。
+
+
+
+
+
+# 20250903
+
+## Switched Control Strategies in Platooning With Dwell-Time-Based String Stability Guaranties
+
+带有驻留时间的车辆队列切换策略
+
+
+
+ACC：自适应巡航，只需要本车信息，不依赖于通信，可靠的同时跟车距离也必须更远
+
+CACC：协同自适应巡航，车和车之间可以通信，跟车距离可以更紧
+
+
+
+
+
+# 20250904
+
+对过去这段时间看过的论文进行小结。
+
+
+
+Q1：`String Stable`是什么稳定？
+
+随着队列中车辆数目的增加，车队拢共的位置误差不应该增大，这就叫做`string stable`。
+
+`deepseek`的解释：扰动在向后车传播时，**要么衰减，要么保持不变，但绝不会放大**。
+
+
+
+the constant time gap policy 比 constant spacing policy的抗扰能力更强。[^1]
+
+[^1]:Robust String stable Longitudinal Control for Vehicle Platoons Under Communication Failures: A Generalized Extended State Observer-Based Control Approach
+
+
+
+Q2：什么是ACC?什么是CACC?
+
+ACC，Adaptive Cruise Control，自适应巡航控制，不用通信，但需要前车的状态信息，因此对于时延、丢包具有更好的鲁棒性，但是这要求在跟车行驶时保持更长的安全跟车距离。
+
+CACC，自适应协同，Cooperative Adaptive Cruise Control，获得前车的控制输入，可以达到更加紧凑的跟车距离。
+
+
+
+
+
+
+
+# 20250907
+
+ACC:车辆无法获取前车信息，由前车加速度引起的速度扰动会不断向车辆后方传递并被放大，从而引起队列不稳定。
+
+
+
+CS(Constant-Spacing)
+
+CTHS(Constant-Time-Headway-Spacing)
+
