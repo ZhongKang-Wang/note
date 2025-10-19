@@ -389,3 +389,20 @@ CS(Constant-Spacing)
 
 CTHS(Constant-Time-Headway-Spacing)
 
+
+
+
+
+
+
+# 小论文
+
+## Robust H$\infty$ Control Heterogenous Vehicle Platoons Under DoS Attacks
+
+
+
+### References
+
+[^1]:Robust Adaptive Control of Heterogeneous Vehicle Platoons in the Presence of Network Disconnections with a Novel String Stability Guarantee
+[^2]:Robust Adaptive Heterogeneous Vehicle Platoon Control Based on Disturbances Estimation and Compensation
+

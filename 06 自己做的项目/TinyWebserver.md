@@ -621,3 +621,130 @@ Proactor 模式的工作流程可分为 4 个步骤：
 
 
 
+# 2025-10-16
+
+# TinyWebServer
+
+开始梳理day17 的 echo_server逻辑
+
+
+
+## 一、main()函数
+
+1. 查询系统中可同时执行线程的数量
+2. new一个EventLoop对象
+3. new一个EchoServer对象
+4. 调用EchoServer对象的成员函数set_thread_nums(int size)
+5. 调用EchoServer对象的成员函数start()
+
+
+
+## 二、new一个EventLoop对象做了哪些事情？
+
+
+
+1. new一个Epoller对象
+2. 创建一个唤醒文件描述符，用于线程间通信
+3. 为唤醒文件描述符创建专用Channel
+4. 设置calling_functors = false // 当前该线程是否正在执行任务队列中的函数的标志位
+5. 将唤醒文件描述符的Channel的可读事件绑定EventLoop的handle_read函数
+6. 将唤醒文件描述符加入epoll中
+
+
+
+## 三、new一个EchoServer对象会发生哪些事情？
+
+
+
+1. 调用server的构造函数
+2. 将server的connect函数包装器绑定了EchoServer的on_connection函数
+
+   将server的message函数包装器绑定了EchoServer的message函数
+
+
+
+1.1 Server构造函数
+
+1. 构造Acceptor对象
+2. 将Acceptor的new_connection函数包装器绑定TcpServer的成员函数handle_new_connection
+3. 构造EventLoopThreadPool，这是线程池
+
+
+
+1.1.1 Acceptor构造函数
+
+1. 创建监听socket
+2. 设置地址重用
+3. 绑定到服务器的ip地址和端口号
+4. 构造Acceptor的Channel
+5. 将Channel的可读事件绑定到Acceptor的accept_connection
+6. 将可读事件加入epoll
+
+
+
+1.1.2 EventLoopThreadPool构造函数
+
+啥也没干
+
+
+
+## 四、调用EchoServer对象的成员函数set_thread_nums(int size)
+
+1. 调用server_的set_thread_nums函数，传入的参数是可执行线程的数量；
+
+1.1 调用线程池的set_thread_nums成员函数，传参；
+
+综上，其实是初始化线程池的成员变量thread_nums_
+
+
+
+## 五、调用EchoServer对象的成员函数start()
+
+1. 调用TcpServer的start()成员函数；
+
+1.1 调用thread_pool_线程池的start()函数，再就是说，是由主循环的EventLoop创建thread_nums_个EventLoopThread，这些EventLoopThread由主线程的线程池管理，并让每一个EventLoopThread调用start_loop()函数
+
+
+
+1.1.1 start_loop()函数
+
+该函数让每个线程都绑定了thread_func()函数，该函数创建了一个loop对象，然后通知阻塞在wait()中的主线程，并返回一个EventLoop。该EventLoop被一个线程占用。该Epoller中注册了一个用于线程间通信的标识符。
+
+
+
+
+
+现在，我们来梳理一下服务器是如何echo的。
+
+当有新的客户端到来时，acceptor在主Eventloop中响应，进而调用自身成员函数accept_connection函数，创建连接socket，创建好之后调用TcpServer的成员函数handle_new_connection。
+
+handle_new_connection函数会调用thread_pool_的next_loop函数，从loops(管理Eventloop)的数组中取走1个作为sub_reactor。那么TcpConnection的连接socket就在该EventLoop中了。
+
+连接建立后会输出
+
+CurrentThread::tid()，所在线程的tid,嗯，明白了。
+
+
+
+其次，当客户端发消息时，EventLoop触发可读，echo_server的on_message被调用，然后触发send()。
+
+
+
+目前Tinywebserver的问题是，没有注册写，那么如果是短的字节，一次调用写就可以写入，不会有什么问题；但是如果一次写不完。。。发送buf没有被清空；
+
+
+
+一次echo之后就会调用handle_close()
+
+该函数会向主循环的EventLoop中加入任务，这个任务是TcpServer的handle_close_in_loop()函数。
+
+
+
+向任务队列中插入任务（函数），
+
+
+
+最后，主循环处理关闭的问题
+
+
+
