@@ -4893,11 +4893,16 @@ template<> void swap<job>(job&, job&); //这是一个显式具体化的函数模
 
 在代码中包含函数模板并不会生成函数定义。编译器使用模板为特定类型生成的是模板实例。
 
+区分**显式实例化**和**显式具体化**
+
 ```C++
-template void swap<int>(int, int) //这是显式实例化，用模版创建处理某种数据的函数
+template void swap<int>(int, int) //这是显式实例化，强制编译器用模版创建处理某种数据的函数
+
+template<> void swap(int, int); // 这是显式具体化，是针对某种类型的专属实现
+template<> void swap<int>(int, int); // 这也是显式具体化，二者等价
 ```
 
-
+`template`后面带`<>`是显式具体化。
 
 ### C++ 关键字 `decltype`
 

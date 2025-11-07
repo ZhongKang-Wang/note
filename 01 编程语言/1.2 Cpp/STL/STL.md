@@ -130,11 +130,64 @@ malloc()是有开销的，它的内存中开辟的内存维护的值包含内存
 
 # allocator 空间适配器
 
-
-
-# 20250731
-
 OOP(`Object-Oriented programming`)企图将datas和methods放在一起
 
 GP(`Genetic Programming`)却是将datas和methods分开来
+
+
+
+### new operator, operator new以及placement new的区别与联系
+
+#### new operator
+
+```c++
+class Foo { ... }
+Foo* pf = new Foo; // 配置内存，然后构造对象
+delete pf; // 将对象析构，然后释放内存
+```
+
+
+
+指的是new关键字/表达式，编译器会将其分解为两个步骤
+
+（1）调用 ::operator new 配置内存
+
+（2）调用 Foo::Foo() 构造对象内容
+
+
+
+#### operator new
+
+```c++
+void *operator new(std::size_t size) // 这是一个可重载的函数，底层调用malloc函数，向操作系统申请一块size大小的内存
+```
+
+Q:为什么使用`operator new`而不是`malloc`？
+
+（1）异常处理机制
+
+**`operator new`**：当内存分配失败时，它会抛出 `std::bad_alloc` 异常。
+
+**`malloc`**：当内存分配失败时，它返回 `NULL`（或 `nullptr`）
+
+（2）可重载性支持为特定类定制内存分配策略。
+
+
+
+#### placement new
+
+在已经申请的内存上构建对象。
+
+```c++
+#include <new.h>
+template<class T1, class T2>
+incline void constuct(T1* p, const T2& value) {
+    new (p) T1(value);
+}
+
+// example
+int buff[10];
+int *p = new(buff) int(0);
+
+```
 

@@ -798,7 +798,7 @@ ages := make(map[string]int)
 map[string]int{}
 ```
 
-可以使用内置函数`delete`从字典中根据键移除元素。及时键不在map中，操作也是安全的。
+可以使用内置函数`delete`从字典中根据键移除元素。即使键不在map中，操作也是安全的。
 
 `map`中元素的迭代顺序也是不固定的，不同的实现方式会使用不同的散列算法。
 
@@ -832,4 +832,722 @@ for _, name := range names {
 
 
 ## 4.4 结构体
+
+下面的语句定义了一个叫`Employee`的结构体和结构体变量
+
+```go
+type Employee struct {
+    ID int
+    Name string
+    Address string
+    DoB time.Time
+    Position string
+    Salary int
+    ManagerID int
+}
+
+var dilbert Employee
+```
+
+在Go语言中，.同样可以用于结构体指针。
+
+```go
+//例如 dilbert是一个Employee类型
+
+var employeeOfTheMonth *Employee = &dilbert
+employeeOfTheMonth.Position += "proactive team player"
+// 等价于(*employeeOfTheMonth).Position += ...
+```
+
+如果一个人结构体的成员变量名称是首字母大写的，那么这个变量是可导出的。
+
+### 结构体字面量
+
+```go
+type Point struct{X, Y int}
+p := Point{1, 2}
+```
+
+在Go这种按值调用的语言中，调用的函数接收到的是实参的副本，因此传入结构体时一般用指针。
+
+```go
+pp := &Point{1, 2}
+// 等价于
+pp := new(Point)
+*pp = Point{1, 2}
+```
+
+### 结构体比较
+
+如果结构体的所有成员变量都可以比较，那么这个结构体就是可比较的。
+
+和其他可比较的类型一样，可比较的类型都可以作为`map`的键类型。
+
+### 结构体嵌套和匿名成员
+
+为什么需要匿名成员？
+
+```go 
+//一个简单的例子
+type Point struct {
+    X, Y int
+}
+type Circle struct {
+    Center Point
+    Radius int
+}
+type Wheel struct {
+    Circle Circle
+    Spokes int
+}
+//如果要从Wheel访问成员X就很麻烦
+```
+
+Go允许我们定义不带名称的结构体成员，只需要指定类型即可，这种结构体成员叫做匿名成员。
+
+```go
+type Circle struct {
+    Point // 匿名成员
+    Radius int
+}
+type Wheel struct {
+    Circle
+    Spokes int
+}
+// 访问最终需要的变量时可以省略中间的匿名成员
+```
+
+初始化
+
+```go
+w = Wheel{Circle{Point{8, 8}, 5}, 20}
+// 另一种
+w = Wheel {
+    Circle: Circle {
+        Point: Point {X: 8, Y: 8},
+        Radius: 5,
+    },
+    Spokes: 20, // 尾部的,是必须的
+}
+```
+
+## 4.5 JSON（待补充）
+
+`JavaScript`对象表示法(JSON)是一种发送和接收格式化信息的标准之一。
+
+Go通过标准库`encoding/json、encoding.xml`对于相关格式的编码和解码提供了支持。
+
+`JSON`是`JavaScript`的`Unicode`编码。
+
+
+
+JSON最基本的类型是数字、布尔值和字符串。
+
+
+
+# 第5章 函数
+
+函数的类型叫做**函数签名**
+
+当两个函数拥有相同类型的形参列表和返回列表时，认为函数的签名是相同的。
+
+只有提供的实参包含引用类型，如指针、slice、map、函数或者通道，才可能间接地修改实参变量。
+
+
+
+### 5.3 多返回值
+
+一个函数如果有命名的返回值，可以省略`return`语句的操作数，这称为裸返回。
+
+
+
+### 5.4 错误
+
+`error`是内置的接口类型。
+
+
+
+#### 5.4.2 文件结束标志
+
+`io`包保证任何由文件结束引起的读取错误，会得到一个与众不同的错误`io.EOF`。
+
+
+
+### 5.5 函数变量
+
+简而言之，可以声明一个变量，将该函数传递给它。
+
+```go
+func square(n int) int { return n * n }
+f := square // f的类型是func(int) int
+fmt.Println(f(3)) // 9
+```
+
+
+
+### 5.6 匿名函数
+
+举个例子
+
+```go
+func squares() func() int {
+    var x int
+    return func() int { // 返回一个匿名函数
+        x++
+        return x * x
+    }
+}
+```
+
+Go程序员通常把函数变量称为闭包。
+
+
+
+
+
+### 5.8 延迟函数调用
+
+`go`语言的`defer`机制。
+
+`defer`是一个用于延迟函数调用的关键字。
+
+执行时机：推迟到当前函数返回前执行。
+
+```go
+package ioutil
+
+func ReadFile(filename string) ([]byte, error) {
+    f, err := os.Open(filename)
+    if err != nil {
+        return nil, err
+    }
+    defer f.Close()
+    return ReadAll(f)
+}
+// 这个函数会在正常返回，return执行，异常提出这些情况下执行f.Close()
+```
+
+
+
+### 5.9 宕机
+
+在 Go 语言中，**runtime** 是 Go 程序的**运行时系统**，它是一套由 Go 官方提供的底层支持组件，负责管理 Go 程序的执行过程，涵盖了内存管理、并发调度、垃圾回收等核心功能。
+
+可以将其看做幕后的管家，其职责之一是并发调度（goroutine 管理）
+
+负责调度所有 `goroutine` 的执行：将大量 `goroutine` 合理分配到操作系统线程上运行，实现高效的并发切换，这也是 `goroutine` 能轻量且高效的核心原因。
+
+
+
+函数这部分讲的也太烂了。
+
+
+
+# 第6章 方法
+
+面向对象编程
+
+```plaintext
+对象
+ |---属性
+ |---方法
+```
+
+例子1
+
+```go
+func (c Celsius) String() string {
+    return fmt.Sprintf("%g°C", c)  
+}
+// 解释： Celsius这个类型，它有一个String()方法，这个方法不需要任何参数，只是返回一个string
+// 前面括号中附加的参数叫做方法的接收者。
+```
+
+例子2
+
+```go
+type Point struct {X, Y float64}
+// 普通函数
+func Distance(p, q Point) float64 {
+    return math.Hypot(q.X - p.X, q.Y - P.Y) // 计算直角三角边的斜边长度
+}
+// Point方法
+func (p Point) Disturbance(q Point) float64 {
+    return math.Hypot(q.X - p.X, q.Y - P.Y)
+}
+
+// 函数调用
+Distance(p, q)
+// 方法调用
+p.Disturbance(q)
+```
+
+在 Go 语言中，**字段（Field）** 是**结构体（Struct）** 中的一个成员变量，用于描述结构体所表示实体的属性。因为每个类型都有自己的命名空间，所以当方法和字段重名时，编译器会报错。
+
+## 6.2 指针接收者的方法
+
+```go
+func (p *Point) ScaleBy(factor float64) {
+    p.X *= factor
+    p.Y *= factor
+}
+// 接收者是一个Point指针
+```
+
+如果接收者是Point类型变量，但是方法需要对应类型的指针，这样是可以的
+
+```go
+p.ScaleBy(2) // 假设该方法在实现的时候接受者恰好需要一个指针，
+// 但是我们提供的是对应类型的变量
+// 那么编译器会对其进行&p的隐式转换
+```
+
+类似地，如果接收者是相应类型的指针，但是方法需要对应的类型，编译器会隐式转换为(*p)
+
+
+
+## 6.3 结构体内嵌组成类型
+
+内嵌使得结构体的定义更加简便，我们可以直接使用结构体内的所有字段。
+
+同理，内嵌的字段的所有方法也可以被结构体直接调用。
+
+
+
+实际上，内嵌字段会告诉编译器生成额外的包装方法。
+
+
+
+匿名字段类型可以是指向命名类型的指针。
+
+
+
+## 6.4 方法变量和表达式
+
+可以将某个方法传递给某个变量，这样这个方法变量就绑定了接收者，只需要形参。
+
+
+
+如果将某个类型的方法传递给某个变量，这个变量就叫做方法表达式，其中方法的接收者默认是第一个形参。
+
+
+
+## 6.6 封装
+
+不能通过对象访问某些方法和变量，这叫做封装。
+
+也即数据隐藏。
+
+在go语言中，首字母大写的标识符是可以从包中导出的，首字母不大写就不导出。
+
+类似地，在结构体中，单个字段的首字母不大写，则称之为封装的变量。
+
+
+
+# 第7章 接口
+
+接口是一种抽象类型。
+
+举个例子。
+
+```go
+package fmt
+func Fprintf(w io.Writer, format string, args ...interface{}) (int, error)
+func Printf(format string, args ...interface{}) (int error) {
+    return Fprintf(os.Stdout, format, args...) // 把结果发到标准输出，os.Stdout 是一个 *os.File 类型的指针变量
+}
+```
+
+`Fprintf`的第一个参数是一个接口，底层要求变量实现了`write`方法。`fmt.Fprintf` 最终会调用 `io.Writer`（比如 `os.Stdout`）的 `Write` 方法。
+
+类似地
+
+```go
+func Sprintf(format string, args ...interface{}) string {
+    var buf bytes.Buffer // bytes 包中定义的结构体类型 实现了write,read等方法
+    Fprintf(&buf, format, args...)
+    return buf.String()
+}
+```
+
+## 7.2 接口类型
+
+一个接口类型定义了一套方法，如果一个具体类型要实现该接口，就必须实现接口定义中的所有方法。
+
+如果一个类型实现了接口定义中的所有方法，那么这个类型实现了这个接口，可以说xx(具体类型)是一个特定的接口类型，比如，`*os.File`是一个`io.ReaderWriter`。
+
+
+
+当方法的接收者是类型T时，`T` 类型的变量 和 `*T` 类型的指针变量，都能调用该方法。
+
+当方法的接收者是*T时，只有 `*T` 类型的指针变量能调用该方法。（临时变量的地址可能失效，为了避免非法访问，所以不允许将T隐式转换成`*T`。
+
+
+
+**空接口类型**
+
+对于实现类型没有任何要求，因为可以将任何值赋给空接口类型。
+
+
+
+## 7.5 接口值
+
+一个接口类型的值包含两个部分：一个具体类型 和 该类型的一个值。二者分别称为动态类型、动态值。
+
+静态类型，编译期确定。
+
+```go
+var w io.Writer // 静态类型是io.Writer，接口初始化，零值是把动态类型和动态值都设置为nil
+
+// 只有当动态类型和动态值都是nil时，接口变量才会被判定成nil
+```
+
+
+
+
+
+## 7.10 类型断言
+
+基本语法
+
+```go
+x.(T) // x是一个接口类型，T是一个类型，通常被称之为断言类型
+```
+
+举个例子
+
+```go
+var w io.Writer // w的静态类型是io.Writer，编译器确定，初始化为nil
+w = os.Stdout // 动态类型是*os.File 动态值是os.Stdout
+f := w.(*os.File) // 如果断言类型T是一个具体类型，且w的动态类型就是T，那么断言的结果是w的动态值，也即os.Stdout
+c := w.(*bytes.Buffer) // 否则崩溃
+```
+
+这还算好理解。
+
+再举个例子，如果T是接口类型。
+
+```go
+var w Writer
+w = os.Stdout // 动态类型是*os.File，动态值是os.Stdout
+rw := w.(io.ReadWriter) // 断言：检查w的动态类型是否实现了io.ReadWriter接口，断言成功。
+// rw的编译期类型是io.ReadWriter，动态类型是*os.File，动态值是os.Stdout
+
+w = new(ByteCounter) // 动态类型是*ByteCounter 只有write方法，没有read方法
+rw = w.(io.ReadWriter) // 断言失败，崩溃
+```
+
+# 第8章 goroutine和通道
+
+`Go`有两种并发编程的风格。`goroutine`和通道`channel`支持通信顺序进程(`Communicating Sequential Process，CSP`)，这是一种并发模式。
+
+
+
+## 8.1 goroutine
+
+在Go中，每个并发执行的活动称为`goroutine`。
+
+当一个程序启动时，只有一个`goroutine`来调用`main`函数，称它为主`goroutine`。新的`goroutine`通过`go`语句创建。
+
+语法上，
+
+```go
+go f() // 新建一个调用f()的goroutine，不用等待
+```
+
+当主`goroutine`结束时，所有的`goroutine`都会直接终结。
+
+
+
+## 8.4 通道
+
+**通道**是让一个`goroutine`发送特定值到另一个`goroutine`的通信机制。每一个通道是一个具体类型的导管，叫做通道的元素类型。
+
+一个有`int`类型元素的通道写为`chan int`。
+
+使用内置的`make`函数来创建通道。
+
+```go
+ch := make(chan int) // ch的类型是chan int
+```
+
+和`map`一样，通道是一个使用`make`创建的数据结构的引用。和其他引用的类型一样，通道的零值是`nil`
+
+关于通道的两个操作，发送和接收，二者称为通信。
+
+```go
+ch <- x // 发送语句
+x = <- ch // 赋值语句
+<- ch // 接收语句，丢弃结果
+```
+
+通过内置的`Close(ch)`函数来关闭通道。
+
+关闭每一个通道不是必需的，可以通过垃圾回收器根据它是否可以访问来决定是否回收它。
+
+
+
+使用简单的`make`调用创建的通道叫做**无缓冲通道**。
+
+```go
+ch = make(chan int, 3) // 容量为3的缓冲通道
+```
+
+
+
+### 8.4.1 无缓冲通道
+
+无缓冲通道被称为**同步通道**。例如，当无缓冲通道上的发送方想要发送数据时将会先阻塞，直到另一个`goroutine`在对应的通道上执行接收操作。只有接收值后发送方的`goroutine`才会被再次唤醒。
+
+
+
+Go提供了单向通道类型，仅仅导出发送或接收操作。
+
+类型`chan <- int`是一个**只能发送**的通道，允许发送但不允许接收。反之，`<-chan int`是一个只允许接收的通道。
+
+### 8.4.2 缓冲通道
+
+
+
+缓冲通道有一个元素队列，队列的最大长度在创建时由`make`指定。
+
+如果通道满，发送操作会被阻塞；类似地，通道为空，接收操作会被阻塞。
+
+
+
+如果使用无缓冲通道，因为`goroutine`在发送结果的时候没有通道接收，发送方会永久阻塞，这种情况叫做**goroutine泄漏**，泄漏的`goroutine`不会自动回收。
+
+
+
+### 补充语法
+
+**Go中的switch**
+
+```go
+age := 2
+switch age { // switch { switch后的表达式不是必须的
+case age < 18:
+    fmt.Println("未成年") // 自动break,无需显式添加
+case age < 60: // case可以匹配多个值，用,分割
+   ...
+default:  
+}
+```
+
+**select**
+
+专门用于**处理通道（channel）操作**的控制语句，它能同时监控多个通道的发送或接收操作，并根据通道的就绪状态（即可执行的操作）随机选择一个分支执行。其核心作用是实现 goroutine 之间的**并发通信与同步**。
+
+```go
+// 基本语法
+select {
+case 通道操作1:  // 发送（ch <- val）或接收（val <- ch）
+    // 分支逻辑
+case 通道操作2:
+    // 分支逻辑
+...
+default:  // 可选，所有通道操作都不可执行时执行
+    // 默认逻辑
+}
+```
+
+`default` 子句让 `select` 变成非阻塞的：如果所有通道都未准备好，就执行 `default`。
+
+如果没有 `default` 且所有通道都阻塞，`select` 会一直等待，直到某个操作可以进行。
+
+
+
+# 第9章 并发
+
+## 9.1 竞态
+
+Q1：什么是并发？
+
+两个或多个事件在**一段时间内**同时发生。
+
+
+
+**并行**：两个或多个事件在 **同一时刻** 同时发生
+
+
+
+操作系统的并发：多个程序在计算机系统中“同时”运行，宏观上是同时运行，但微观上交替运行的
+对于单核CPU，同一时刻只能执行一个程序，多个程序只能并发执行
+但是对于多核CPU，同一时刻可以执行多个程序，多个程序可以并行执行
+
+
+
+Q2：并发安全
+
+一个能在串行程序中正确工作的函数，在并发调用时仍能正常工作，那么这个函数就是并发安全的。
+
+可导出的包级别函数通常可以认为是并发安全的。
+
+
+
+Q3：什么是竞态？
+
+指的是多个`goroutine`按照某些交错顺序执行时程序无法给出正确的结果。
+
+
+
+数据竞态：两个`goroutine`并发读写同一个变量且至少一个是写入时。
+
+```go
+// 以银行存钱为例
+A1r 0 // Alice读余额
+B 100 // Bob往里存钱
+A1w 200 
+A2 = "200" // 账户余额
+```
+
+如何避免数据竞态？
+
+## 9.2 互斥锁：`sync.Mutex`
+
+`sync`包有一个单独的`Mutex`类型来支持互斥锁模式。
+
+```go
+var (
+	mu sync.Mutex // 保护balance
+    balance int
+)
+
+func Deposit(amount int) {
+    mu.Lock() // 获取一个互斥锁，如果其它goroutine已经取走了互斥锁，那么该操作会被阻塞
+    balance = balance + amount // 临界区域
+    mu.Unlock()
+}
+```
+
+
+
+## 9.3 读写互斥锁: `sync.RWMutex`
+
+Q:有了互斥锁，为什么还要读写互斥锁？
+
+- 读写互斥锁允许多个 goroutine 同时**读**（共享访问），不阻塞彼此；
+- 仅当有 goroutine 进行**写**操作时，才会阻塞所有读和其他写操作（独占访问）
+- 在 “读多写少” 场景下大幅提升并发性能。
+
+
+
+多读单写锁：只读操作可以并发执行，但写操作需要获得完全独享的访问权限
+
+```go
+var mu sync.RWMutex
+var balance int
+
+func Balance() int {
+    mu.RLock() // 获取一个读锁，也称共享锁，比普通的互斥锁慢
+    defer mu.RUnlock()
+    return balance
+}
+```
+
+## 9.4 内存同步
+
+计算机一般有多个处理器，每个处理器都有内存的本地缓存。
+
+为了提高效率，对内存的写入是缓存在每个处理器中的，只在必要时才刷回内存。
+
+
+
+## 9.5 延迟初始化: `sync.Once`
+
+理念：预先初始化一个变量会增加程序的启动延时，并且如果实际执行时可能根本用不上这个变量，那么初始化也不是必须的。
+
+`Once`包含一个布尔变量和一个互斥量，布尔变量记录初始化是否已经完成，互斥量则负责保护这个布尔变量和客户端的数据结构。
+
+`Once`的唯一方法`Do`以初始化函数作为它的参数，传入的实参无参无返回值，（可以理解为传入的是函数在内存中的入口地址）。
+
+
+
+## 9.6 竞态检测器
+
+Go语言运行时和工具链装备了一个精致并易于使用的动态分析工具：竞态检测器
+
+`-race`命令行参数加入到`go build`、`go run`、`go test`命令中即可使用该功能。
+
+
+
+## 9.8 goroutine与线程
+
+### 9.8.1 可增长的栈
+
+每个OS线程都有一个固定大小的栈内存（通常是2MB），栈内存区域用于保存在其他函数调用期间那些正在执行或者临时暂停的函数中的局部变量。
+
+对于一个轻量级的goroutine而言，在其生命周期开始时只有一个很小的栈，通常为2KB。**它可以按需增大和缩小。**
+
+
+
+### 9.8.2 goroutine调度
+
+OS线程由OS内核调度。
+
+大致的流程如下：
+
+每隔几号秒，一个硬件时钟中断通知CPU调用一个叫**调度器**的内核函数，该函数暂停当前正在运行的线程，并将其寄存器的信息保存到内存，接着查看线程列表，从内存中恢复下一个待运行线程的注册表信息。
+
+
+
+而Go运行时包含一个自己的调度器。这个调度器使用一个称为**m:n调度**的技术（它可以复用/调度m个goroutine到n个OS线程。
+
+与操作系统的线程调度器不同的是，Go调度器并非硬件时钟触发，而是由特定Go语言结构触发。
+
+比如通道阻塞，调度器就会将该goroutine设为休眠模式，**不需要切换到内核**，因此调用一个goroutine比调度一个线程的成本低很多。
+
+
+
+Q：为什么在许多操作系统和编程语言中，每个线程都有一个独特的标识，而goroutine没有呢？
+
+其实goroutine也是有的，只是官方没有在标准库中公开获取这个标识的接口。
+
+# 第10章 包和 go 工具
+
+Go程序的编译比其他语言要快，原因是
+
+1. 所有的导入都在每个源文件的开头显式列出，这样编译器在确定依赖性的时候就不需要读取和处理整个文件；
+2. 所有包可以独立甚至并行编译；
+
+# 第11章 测试
+
+## 11.1 go test 工具
+
+在一个包目录中，以`_test.go`结尾的文件不是`go build`命令编译的目标，而是`go test`编译的目标。
+
+在`*_test.go`文件中，三种函数需要特殊对待。
+
+- 功能测试函数
+
+是以`Test`前缀命名的函数，用于检测一些程序逻辑的正确性，`go test`运行测试函数，并且报告结果是`PASS`还是`FAIL`
+
+- 基准测试函数
+
+以`Benchmark`开头，用于测试某些操作的性能，`go test`汇报操作的平均执行时间。
+
+- 示例函数
+
+以`Example`开头，用来提供机器检查过的文档？？？
+
+
+
+## 11.2 Test 函数
+
+每一个测试文件必须导入`testing`包。
+
+功能测试函数必须以Test打头，可选的后缀名也必须以大写字母开头，参数必须是`t *testing.T`。
+
+```go
+//example
+func TestSin(t *testing.T) { /* ... */ }
+```
+
+
+
+在Go语言中，反引号用于表示原始字符串字面量，例如`/n`会原样保留
+
+
+
+## 11.4 Benchmark 函数
 
