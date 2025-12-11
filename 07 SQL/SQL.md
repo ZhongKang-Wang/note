@@ -43,7 +43,7 @@ SQL开发人员喜欢对SQL关键字使用大写，而对列名和表名使用�
 SELECT * -- 表示检索所有列
 ```
 
-`SELECT`返回匹配的所有行，但是可能一些行一样都满足条件，可以使用`DISTINCT`关键字进行过滤，只返回不同值。
+`SELECT`返回匹配的所有行，但是可能一些行一样都满足条件，可以使用`DISTINCT`关键字进行过滤，只返回不同值（去重）。
 
 ```sql
 SELECT DISTINCT vend_id FROM Products;
@@ -63,6 +63,7 @@ RDBMS(Relational Database Management System)，关系数据库
 - **Oracle Database**
 - **Microsoft SQL Server**
 - **IBM DB2**
+- `duckDB`
 
 非关系型数据库 NoSQL(Not Only SQL)
 
@@ -411,7 +412,7 @@ FROM Customers; -- 对表中行进行计数，此时并不忽略NULL行
 ```sql
 SELECT vend_id, COUNT(*) AS num_prods
 FROM Products
-GROUP BY vend_id; -- GROUP BY 子句必须在WHERE 子句之后， ORDER BY子句之前
+GROUP BY vend_id; -- GROUP BY 子句必须在 WHERE 子句之后， ORDER BY子句之前
 -- 根据vend_id 找出其到底有多少行
 ```
 

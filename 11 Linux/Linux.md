@@ -1312,3 +1312,217 @@ IP地址用于标识主机，端口号用于识别进程。
 ## `udp`套接字编程
 
 在`udp`套接字程序中，客户端不需要与服务端建立联系。
+
+
+
+# 2025-11-19 Linux网络配置
+
+好的，我没有那么悲观，其实是被逼得没招了。这次比起上次系统崩溃要好一点，我也从中得到了教训，形成了保留快照的好习惯。
+
+今天从上午9点多到现在将近15点，也是花了相当长的一段时间，接下来我们进入正题，记录一下我们踩过的坑。
+
+![image-20251119145051352](E:\Note\11 Linux\Linux.assets\image-20251119145051352.png)
+
+【无线路由器】是`wifi`信号发射器，能把宽带信号转换成`WiFi`。
+
+这个路由器在生产时由路由器厂商预设好了IP地址，也即网关【10.249.0.1】。我们主机的IP地址是【10.249.98.52】，大概率是路由器通过【DHCP，**Dynamic Host Configuration Protocol**】给连入的设备自动分配的。
+
+```plaintext
+[主机 VMnet8] (IP: 192.168.2.1) ←→ [虚拟机 ens33] (IP: 192.168.2.132)
+                    ↑
+            [VMware NAT设备] (网关: 192.168.2.2)
+```
+
+【VMnet8】是虚拟机软件提供的虚拟网卡，配合【NAT】模式使用，使得虚拟机可以通过主机的真实网卡访问互联网。
+
+![image-20251119150351610](E:\Note\11 Linux\Linux.assets\image-20251119150351610.png)
+
+虚拟网卡的IP地址是由【VMware】自带的【DHCP】自动分配的。
+
+当虚拟网卡想要连接外网时，就要发送数据包，在数据包头添加【源IP】和【目标IP】等相关信息。
+
+举个例子，`ping baidu.com`
+
+1. 向DNS服务器查询（8.8.8.8）
+
+- 虚拟机配置了：`nameserver 8.8.8.8`
+- 所以向Google的DNS服务器发送查询请求
+
+```plaintext
+ping baidu.com
+    ↓
+系统查询DNS：baidu.com → 110.242.68.66
+    ↓  
+创建数据包：目标IP = 110.242.68.66
+    ↓
+虚拟路由器查看路由表：默认网关 192.168.2.2
+    ↓
+发送到：192.168.2.2
+    ↓
+VMware NAT转换...
+    ↓
+发送给虚拟网卡
+    ↓
+主机协议栈
+	↓
+ 真实网卡
+```
+
+
+
+# 2025-11-19 用GDB调试程序
+
+
+
+How to Use GDB for Debugging
+
+1. 编译C程序用debug模式
+
+$ gcc -ggdb -Wall -o gdbtest gdbtest.c
+
+-g 会让编译器在生成的可执行文件中添加调试信息 
+
+-ggdb 是更 “针对性” 的调试信息生成选项：它会优先生成 GDB 调试器能识别的、表达能力最强的调试格式 
+
+-Wall 是 “启用所有警告” 的意思（Wall = Warnings All） 
+
+$ gdb program // 在终端里启用GDB调试器，并指定调试的程序为program
+
+（gdb) run // (gdb)是GDB的命令提示符，说明现在已经进入GDB调试环境，可以输入调试命令了。
+
+run是GDB的命令之一，作用是运行被调试的程序(r是run的快捷键，输入r和输入run效果一样）
+
+
+
+给被调试程序传递命令行参数的两种方法
+
+1. $ gdb --args program arg1 arg2 ... argN 
+2. 在GDB中执行run时传递参数
+
+（gdb) r arg1 args2 … argN
+
+
+
+$ gdb --silent program # 启动GDB时隐藏无关的输出
+
+
+
+Print Code in GDB Console
+
+list查看源代码
+
+如list 12 表示展示12行所在的上下文
+
+如list CheckValidEmail 表示显示函数源码
+
+
+
+3. 如何用GDB设置断点
+
+$ (gdb) break linenum // 断点作用于当前源文件（这一行代码先不执行）
+
+$ (gdb) b function // 在名为function的函数入口设置断点（在函数的第一行代码执行前暂停）
+
+$ (gdb) b +linenum // 相对于当前行号向后偏移（例如当前断点执行到13行，13行未执行，+5那么就会执行到18行，18行未执行 ）
+
+(gdb) b filename:function 在指定的函数入口设置断点
+
+(gdb) b filename:linenum
+
+(gdb) b *(memory address) // 程序执行到该内存地址对应的指令时暂停执行
+
+如(gdb) b *0x400510 
+
+
+
+(gdb) b <...> if condition  // 设置条件断点。只有指定的条件满足，断点才会触发
+
+如break 20 if count==5 
+
+
+
+Print Debug Info in GDB
+
+(gdb) command 1 // 每个断点会被GDB分配一个唯一的编号，比如第1个断点是1
+
+
+
+在断点触发后，如何打印调用栈？
+
+(gdb) backtrace // OR (gdb) info stack
+
+
+
+如何让当前正在执行的函数执行到结束？
+
+（gdb) fin
+
+
+
+在执行程序期间，如何打印当前的调用栈？
+
+(gdb) where
+
+
+
+在调试时如何打印行数
+
+(gdb) frame
+
+
+
+在GDB中追踪变量
+
+(gdb) p <<variable>> 
+
+如(gdb) p count 打印变量count的当前值
+
+如(gdb) p list->size 打印结构体list中成员size的值
+
+如(gdb) p *ptr 打印指针ptr指向的内存内容
+
+(gdb) p/x DBG_FLAG 以16进制打印变量
+
+
+
+假如你定义了一个数组 int arr[5]
+
+(gdb) p arr
+
+如果数组比较大，
+
+(gdb) p *&arr[96]@5 只打印96~100这5个元素
+
+
+
+添加观察点，让调试器实时盯着这个变量，一旦这个变量有变化程序就暂停
+
+(gdb) watch count
+
+
+
+如何用GDB管理断点
+
+Continue 让程序继续执行
+
+Step in 单步进入
+
+Next 单步执行，跳过函数
+
+
+
+Ignore 1 1000 // 忽略编号为1的断点接下来的1000次触发
+
+
+
+删除断点
+
+Delete 断点号
+
+
+
+Q 退出GDB
+
+![image-20251119190206333](E:\Note\11 Linux\Linux.assets\image-20251119190206333.png)
+
+待整理

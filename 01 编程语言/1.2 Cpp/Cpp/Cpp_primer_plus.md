@@ -1,6 +1,4 @@
-[TOC]
-
-# 20250311
+20250311
 
 ## stack 栈容器
 
@@ -1814,7 +1812,9 @@ string类 位于命名空间std中
 
 读取string对象，可以用```getline(cin, str)```。
 
-它不是类方法，是定义在`string`头文件中的模版函数。
+它不是类方法，而是在`string`头文件中重载的函数。
+
+读取字符直到遇到**换行符 `'\n'`** 为止，该函数会从输入缓冲区中提取换行符并丢弃。
 
 str是string对象，可以根据字符串长度自动调整长度。
 
@@ -8274,6 +8274,15 @@ example
 - weak_ptr<T> 模板类中没有重载 * 和 -> 运算符，这也就意味着，weak_ptr 类型指针只能访问所指的堆内存，而无法修改它。
 
 
+
+
+
+
+## `Cpp`智能指针之间的转换
+
+static_pointer_cast、dynamic_pointer_cast、const_pointer_cast、reinterpret_pointer_cast，**专门用于`std::shared_ptr`的类型转换**
+
+std::static_pointer_cast()，用于向上转换，将派生类指针转换成基类指针
 
 # 20250623
 
